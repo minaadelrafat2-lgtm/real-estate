@@ -3,9 +3,6 @@ import { Building2, Mail, Lock, User, Briefcase, Home as HomeIcon, ArrowRight, C
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/context/RouterContext';
 import type { UserRole } from '@/types';
-import { sanitizeText, isValidEmail, isStrongPassword, detectSqlInjection, RateLimiter } from '@/lib/security';
-
-const authRateLimiter = new RateLimiter(3000);
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -22,43 +19,14 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
 
-    if (detectSqlInjection(email) || detectSqlInjection(password) || detectSqlInjection(fullName)) {
-      setError('Invalid input detected. Please check your entries.');
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    if (mode === 'signup') {
-      const pwdCheck = isStrongPassword(password);
-      if (!pwdCheck.valid) {
-        setError(pwdCheck.message ?? 'Password is not strong enough.');
-        return;
-      }
-      if (fullName.trim().length < 2) {
-        setError('Please enter your full name.');
-        return;
-      }
-    }
-
-    if (!authRateLimiter.canProceed(email)) {
-      setError('Too many attempts. Please wait a moment and try again.');
-      return;
-    }
-
     setLoading(true);
-    const cleanEmail = sanitizeText(email, 254);
-    const cleanName = mode === 'signup' ? sanitizeText(fullName, 100) : '';
 
     if (mode === 'signin') {
-      const { error } = await signIn(cleanEmail, password);
+      const { error } = await signIn(email, password);
       if (error) setError(error);
       else navigate({ name: 'home' });
     } else {
-      const { error } = await signUp(cleanEmail, password, cleanName, role);
+      const { error } = await signUp(email, password, fullName, role);
       if (error) setError(error);
       else navigate({ name: 'home' });
     }
