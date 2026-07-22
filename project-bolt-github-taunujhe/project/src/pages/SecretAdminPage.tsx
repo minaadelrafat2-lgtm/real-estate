@@ -2,13 +2,8 @@ import { useState } from 'react';
 import { Shield, Lock, ArrowRight, Eye, EyeOff, Building2, ArrowLeft } from 'lucide-react';
 import { useRouter } from '@/context/RouterContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { sanitizeText, RateLimiter } from '@/lib/security';
 
 const ADMIN_GATE_PASSWORD = 'EstatePro@Admin2026!';
-const ADMIN_AUTH_EMAIL = 'admin@estate.demo';
-const ADMIN_AUTH_PASSWORD = 'demo1234';
-const accessLimiter = new RateLimiter(3000);
 
 export default function SecretAdminPage() {
   const { navigate } = useRouter();
@@ -22,29 +17,12 @@ export default function SecretAdminPage() {
     e.preventDefault();
     setError(null);
 
-    if (!accessLimiter.canProceed('admin-access')) {
-      setError('Too many attempts. Please wait a moment.');
-      return;
-    }
-
     setLoading(true);
 
     await new Promise((resolve) => setTimeout(resolve, 400));
 
-    if (sanitizeText(password, 100) !== ADMIN_GATE_PASSWORD) {
+    if (password !== ADMIN_GATE_PASSWORD) {
       setError('Incorrect password. Access denied.');
-      setLoading(false);
-      return;
-    }
-
-    // Sign in the pre-provisioned admin account so RLS-protected writes work.
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: ADMIN_AUTH_EMAIL,
-      password: ADMIN_AUTH_PASSWORD,
-    });
-
-    if (signInError) {
-      setError('Unable to establish admin session. Please try again.');
       setLoading(false);
       return;
     }
